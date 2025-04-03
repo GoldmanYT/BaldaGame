@@ -1,139 +1,219 @@
-#include <windows.h>
-#include <stdio.h>
+#include "consts.hpp"
+#include <fcntl.h>
+#include <io.h>
+#include <iostream>
+#include <vector>
 
-HANDLE hStdin;
-DWORD fdwSaveOldMode;
+using namespace std;
 
-VOID KeyEventProc(KEY_EVENT_RECORD);
-VOID MouseEventProc(MOUSE_EVENT_RECORD);
-VOID ResizeEventProc(WINDOW_BUFFER_SIZE_RECORD);
-
-int main(VOID)
-{
-    DWORD cNumRead, fdwMode, i;
-    INPUT_RECORD irInBuf[128];
-    int counter = 0;
-
-    // Get the standard input handle.
-
-    hStdin = GetStdHandle(STD_INPUT_HANDLE);
-    if (hStdin == INVALID_HANDLE_VALUE)
-        printf("GetStdHandle");
-
-    // Save the current input mode, to be restored on exit.
-
-    if (!GetConsoleMode(hStdin, &fdwSaveOldMode))
-        printf("GetConsoleMode");
-
-    // Enable the window and mouse input events.
-
-    fdwMode = ENABLE_WINDOW_INPUT | ENABLE_MOUSE_INPUT;
-    if (!SetConsoleMode(hStdin, fdwMode))
-        printf("SetConsoleMode");
-
-    // Loop to read and handle the next 100 input events.
-
-    while (counter++ <= 100)
-    {
-        // Wait for the events.
-
-        if (!ReadConsoleInput(
-            hStdin,      // input buffer handle
-            irInBuf,     // buffer to read into
-            128,         // size of read buffer
-            &cNumRead)) // number of records read
-            printf("ReadConsoleInput");
-
-        // Dispatch the events to the appropriate handler.
-
-        for (i = 0; i < cNumRead; i++)
+class BaldaGame {
+    struct Coord {
+        int x, y;
+        bool operator==(Coord other)
         {
-            switch (irInBuf[i].EventType)
-            {
-            case KEY_EVENT: // keyboard input
-                KeyEventProc(irInBuf[i].Event.KeyEvent);
-                break;
-
-            case MOUSE_EVENT: // mouse input
-                MouseEventProc(irInBuf[i].Event.MouseEvent);
-                break;
-
-            case WINDOW_BUFFER_SIZE_EVENT: // scrn buf. resizing
-                ResizeEventProc(irInBuf[i].Event.WindowBufferSizeEvent);
-                break;
-
-            case FOCUS_EVENT:  // disregard focus events
-
-            case MENU_EVENT:   // disregard menu events
-                break;
-
-            default:
-                printf("Unknown event type");
-                break;
-            }
+            return (x == other.x) && (y == other.y);
         }
+    };
+
+    wchar_t field[BOARD_SIZE][BOARD_SIZE];
+    vector<Coord> selectedWord;
+    wchar_t selectedLetter;
+    Coord placedLetterCoord;
+    vector<wstring> sentWords;
+
+    bool isNeighbor(Coord c1, Coord c2);
+    bool onField(int x, int y);
+
+public:
+    wstring getWord();
+    BaldaGame();
+    BaldaGame(wstring word);
+    void print() const;
+    void selectLetter(int x, int y);
+    void selectLetter(wchar_t letter);
+    void placeLetter(int x, int y);
+    void removeLetter();
+    bool isWord();
+    void sendSelectedWord();
+};
+
+int main()
+{
+    int _ = _setmode(_fileno(stdin), _O_U16TEXT);
+    _ = _setmode(_fileno(stdout), _O_U16TEXT);
+
+    wstring testWord = L"¡¿Àƒ¿";
+    BaldaGame game(testWord);
+
+    game.print();
+    game.selectLetter(L'¿');
+    game.placeLetter(0, 0);
+
+    for (int i = 0; i < 5; i++) {
+        game.selectLetter(i, 2);
     }
 
-    // Restore input mode on exit.
+    wstring word;
+    word = game.getWord();
 
-    SetConsoleMode(hStdin, fdwSaveOldMode);
+    wcout << word;
 
     return 0;
 }
 
-VOID KeyEventProc(KEY_EVENT_RECORD ker)
+BaldaGame::BaldaGame()
 {
-    printf("Key event: ");
-
-    if (ker.bKeyDown)
-        printf("key pressed\n");
-    else printf("key released\n");
+    for (int y = 0; y < BOARD_SIZE; y++)
+        for (int x = 0; x < BOARD_SIZE; x++)
+            field[x][y] = BLANK_LETTER;
+    selectedLetter = BLANK_LETTER;
+    placedLetterCoord.x = -1;
+    placedLetterCoord.y = -1;
 }
 
-VOID MouseEventProc(MOUSE_EVENT_RECORD mer)
+BaldaGame::BaldaGame(wstring word)
 {
-#ifndef MOUSE_HWHEELED
-#define MOUSE_HWHEELED 0x0008
-#endif
-    printf("Mouse event: ");
+    for (int y = 0; y < BOARD_SIZE; y++) {
+        if (y == BOARD_SIZE / 2) {
+            for (int x = 0; x < BOARD_SIZE; x++) {
+                field[x][y] = word[x];
+            }
+        } else {
+            for (int x = 0; x < BOARD_SIZE; x++) {
+                field[x][y] = BLANK_LETTER;
+            }
+        }
+    }
+    selectedLetter = BLANK_LETTER;
+    placedLetterCoord.x = -1;
+    placedLetterCoord.y = -1;
+}
 
-    switch (mer.dwEventFlags)
-    {
-    case 0:
-
-        if (mer.dwButtonState == FROM_LEFT_1ST_BUTTON_PRESSED)
-        {
-            printf("left button press at %d %d\n", mer.dwMousePosition.X, mer.dwMousePosition.Y);
+void BaldaGame::print() const
+{
+    for (int x = 0; x < BOARD_SIZE; x++) {
+        wcout << L"+---";
+    }
+    wcout << L"+\n";
+    for (int y = 0; y < BOARD_SIZE; y++) {
+        for (int x = 0; x < BOARD_SIZE; x++) {
+            wcout << L"| " << field[x][y] << L" ";
         }
-        else if (mer.dwButtonState == RIGHTMOST_BUTTON_PRESSED)
-        {
-            printf("right button press \n");
+        wcout << L"|\n";
+        for (int x = 0; x < BOARD_SIZE; x++) {
+            wcout << L"+---";
         }
-        else
-        {
-            printf("button press\n");
-        }
-        break;
-    case DOUBLE_CLICK:
-        printf("double click\n");
-        break;
-    case MOUSE_HWHEELED:
-        printf("horizontal mouse wheel\n");
-        break;
-    case MOUSE_MOVED:
-        printf("mouse moved\n");
-        break;
-    case MOUSE_WHEELED:
-        printf("vertical mouse wheel\n");
-        break;
-    default:
-        printf("unknown\n");
-        break;
+        wcout << L"+\n";
     }
 }
 
-VOID ResizeEventProc(WINDOW_BUFFER_SIZE_RECORD wbsr)
+bool BaldaGame::onField(int x, int y)
 {
-    printf("Resize event\n");
-    printf("Console screen buffer is %d columns by %d rows.\n", wbsr.dwSize.X, wbsr.dwSize.Y);
+    return (0 <= x) && (x < BOARD_SIZE) && (0 <= y) && (y < BOARD_SIZE);
+}
+
+bool BaldaGame::isNeighbor(Coord c1, Coord c2)
+{
+    return abs(c1.x - c2.x) + abs(c1.y - c2.y) == 1;
+}
+
+void BaldaGame::selectLetter(int x, int y)
+{
+    if (selectedLetter == BLANK_LETTER)
+        return;
+    if ((placedLetterCoord.x == -1) || (placedLetterCoord.y == -1))
+        return;
+
+    Coord coord = { x, y };
+    if (!onField(x, y))
+        return;
+    if (selectedWord.size()) {
+        Coord lastCoord = selectedWord.back();
+        if (lastCoord == coord) {
+            selectedWord.pop_back();
+        } else if (isNeighbor(lastCoord, coord)) {
+            bool notInSelectedWord = 1;
+            for (Coord wordCoord : selectedWord) {
+                if (wordCoord == coord) {
+                    notInSelectedWord = 0;
+                }
+            }
+            if (notInSelectedWord) {
+                selectedWord.push_back(coord);
+            }
+        }
+    } else {
+        selectedWord.push_back(coord);
+    }
+}
+
+wstring BaldaGame::getWord()
+{
+    wstring word(BOARD_SIZE * BOARD_SIZE + 1, L'\0');
+    for (int i = 0; i < selectedWord.size(); i++) {
+        Coord coord = selectedWord[i];
+        word[i] = field[coord.x][coord.y];
+    }
+    return word;
+}
+
+void BaldaGame::selectLetter(wchar_t letter)
+{
+    selectedLetter = letter;
+}
+
+void BaldaGame::placeLetter(int x, int y)
+{
+    if (!onField(x, y))
+        return;
+    if (selectedLetter == BLANK_LETTER)
+        return;
+    if ((placedLetterCoord.x != -1) && (placedLetterCoord.y != -1)) {
+        field[placedLetterCoord.x][placedLetterCoord.y] = BLANK_LETTER;
+    }
+    field[x][y] = selectedLetter;
+    placedLetterCoord.x = x;
+    placedLetterCoord.y = y;
+}
+
+void BaldaGame::removeLetter()
+{
+    selectedLetter = BLANK_LETTER;
+    placedLetterCoord.x = -1;
+    placedLetterCoord.y = -1;
+}
+
+bool BaldaGame::isWord()
+{
+    wstring word = getWord();
+    return true;
+}
+
+void BaldaGame::sendSelectedWord()
+{
+    if (!isWord())
+        return;
+
+    bool hasPlacedLetter = 0;
+    for (Coord coord : selectedWord) {
+        if (coord == placedLetterCoord) {
+            hasPlacedLetter = 1;
+            break;
+        }
+    }
+    if (!hasPlacedLetter)
+        return;
+
+    wstring currentWord = getWord();
+    for (wstring word : sentWords) {
+        if (word == currentWord) {
+            return;
+        }
+    }
+
+    sentWords.push_back(currentWord);
+    selectedLetter = BLANK_LETTER;
+    placedLetterCoord.x = -1;
+    placedLetterCoord.y = -1;
+    selectedWord.clear();
 }
