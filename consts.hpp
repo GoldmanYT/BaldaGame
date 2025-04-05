@@ -7,6 +7,8 @@ const int BOARD_SIZE = 5;
 const int DEFAULT_BUTTON_WIDTH = 5;
 const int DEFAULT_BUTTON_HEIGHT = 3;
 
+const wchar_t BUTTON_BORDERS[] = L"┌╔┐╗┘╝└╚│║─═";
+
 const wchar_t LEFT_ARROW = L'←';
 const wchar_t UP_ARROW = L'↑';
 const wchar_t RIGHT_ARROW = L'→';
