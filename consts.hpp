@@ -1,9 +1,10 @@
 ﻿#pragma once
 
+const int PLAYER_COUNT = 2;
 const int BOARD_SIZE = 5;
 
 const int CONSOLE_WIDTH = 66;
-const int CONSOLE_HEIGHT = 32;
+const int CONSOLE_HEIGHT = 35;
 
 const int MENU_BUTTON_GRID_INDEX = 0;
 const int MENU_BUTTON_GRID_WIDTH = 3;
@@ -30,24 +31,35 @@ const int FIELD_BUTTON_Y = 5;
 const int FIELD_BUTTON_WIDTH = 5;
 const int FIELD_BUTTON_HEIGHT = 3;
 
-const int LETTERS_BUTTON_GRID_INDEX = 2;
+const int WORD_BUTTON_GRID_INDEX = 2;
+const int WORD_BUTTON_X = 13;
+const int WORD_BUTTON_Y = 22;
+const int WORD_BUTTON_WIDTH = 35;
+const int WORD_BUTTON_HEIGHT = 3;
+
+const int LETTERS_BUTTON_GRID_INDEX = 3;
 const int LETTERS_BUTTON_GRID_WIDTH = 11;
 const int LETTERS_BUTTON_GRID_HEIGHT = 3;
 
 const int LETTER_BUTTON_X = 3;
-const int LETTER_BUTTON_Y = 22;
+const int LETTER_BUTTON_Y = 25;
 const int LETTER_BUTTON_WIDTH = 5;
 const int LETTER_BUTTON_HEIGHT = 3;
 
-const wchar_t BUTTON_BORDERS[] = L"  ┌╔┐╗┘╝└╚│║─═";
+const int PLAYER1_STATS_X = 1;
+const int PLAYER1_STATS_Y = 5;
 
-const wchar_t LEFT_ARROW = L'←';
-const wchar_t UP_ARROW = L'↑';
-const wchar_t RIGHT_ARROW = L'→';
-const wchar_t DOWN_ARROW = L'↓';
+const int PLAYER2_STATS_X = 43;
+const int PLAYER2_STATS_Y = 5;
+
+const int PLAYER_STATS_WIDTH = 17;
+const int PLAYER_STATS_HEIGHT = 15;
+
+const wchar_t BUTTON_BORDERS[] = L"  ┌╔┐╗┘╝└╚│║─═";
+const wchar_t FIELD_BUTTON_ARROWS[] = L"↑→↓←";
 
 const wchar_t START_GAME_TEXT[] = L"Начать игру";
 const wchar_t MISS_MOVE_TEXT[] = L"Пропустить ход";
-const wchar_t DELETE_LETTER_TEXT[] = L"Удалить букву";
+const wchar_t REMOVE_LETTER_TEXT[] = L"Удалить букву";
 const wchar_t RUSSIAN_LETTERS[] = L"АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ";
 const wchar_t BLANK_LETTER = L' ';

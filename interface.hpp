@@ -7,14 +7,12 @@
 using namespace std;
 
 class UserInterface {
-public:
     struct Coord {
         int x, y;
         Coord();
         Coord(int x, int y);
     };
 
-private:
     class Button {
     protected:
         Coord pos;
@@ -26,19 +24,50 @@ private:
         Button();
         Button(int x, int y, int width, int height);
         Button(int x, int y, int width, int height, wstring text);
-        void draw(HANDLE& handle) const;
+        virtual void draw(HANDLE& handle) const;
         void setSelected(bool state);
         Coord getPos() const;
         Coord getSize() const;
         virtual void onClick();
     };
     class StartGameButton : public Button {
+        BaldaGame* game;
+
+    public:
+        StartGameButton(BaldaGame* game);
+        void onClick() override;
     };
     class MissMoveButton : public Button {
+        BaldaGame* game;
+
+    public:
+        MissMoveButton(BaldaGame* game);
+        void onClick() override;
     };
     class RemoveLetterButton : public Button {
+        BaldaGame* game;
+
+    public:
+        RemoveLetterButton(BaldaGame* game);
+        void onClick() override;
     };
     class FieldButton : public Button {
+        BaldaGame* game;
+        Coord fieldPos;
+
+    public:
+        FieldButton(int x, int y, int fieldX, int fieldY, wchar_t letter, BaldaGame* game);
+        void onClick() override;
+        void setLetter(wchar_t letter);
+        // virtual void draw(HANDLE& handle) const override;
+    };
+    class WordButton : public Button {
+        BaldaGame* game;
+
+    public:
+        WordButton(BaldaGame* game);
+        void onClick() override;
+        void update();
     };
     class LetterButton : public Button {
         BaldaGame* game;
@@ -47,14 +76,21 @@ private:
         LetterButton(int x, int y, wchar_t letter, BaldaGame* game);
         void onClick() override;
     };
+    class PlayerStats : Button {
+        BaldaGame::Player* player;
+
+    public:
+        PlayerStats(int x, int y, BaldaGame::Player* playerPtr);
+        void draw(HANDLE& handle) const;
+    };
     class ButtonGrid {
         Coord size;
-        vector<vector<Button>> grid;
+        vector<vector<Button*>> grid;
 
     public:
         ButtonGrid(int width, int height);
         void draw(HANDLE& handle);
-        void placeButton(int x, int y, Button& button);
+        void placeButton(int x, int y, Button* button);
         Button* getButton(int x, int y);
         Coord getSize();
     };
@@ -64,11 +100,12 @@ private:
     int tabIndex;
     Coord buttonGridPos;
     vector<ButtonGrid> buttonGrids;
+    vector<PlayerStats> playerStats;
     void mouseEvent(MOUSE_EVENT_RECORD);
     void keyboardEvent(KEY_EVENT_RECORD);
+    void draw();
 
 public:
     UserInterface(BaldaGame* game, HANDLE hStdIn, HANDLE hStdOut);
     void update();
-    void draw();
 };

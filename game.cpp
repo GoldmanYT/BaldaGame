@@ -51,6 +51,8 @@ BaldaGame::BaldaGame()
         }
     }
     placedLetter = Cell();
+    playerMove = 0;
+    players.resize(PLAYER_COUNT);
 }
 
 BaldaGame::BaldaGame(wstring word)
@@ -67,6 +69,8 @@ BaldaGame::BaldaGame(wstring word)
         }
     }
     placedLetter = Cell();
+    playerMove = 0;
+    players.resize(PLAYER_COUNT);
 }
 
 void BaldaGame::print() const
@@ -102,30 +106,23 @@ void BaldaGame::selectLetter(wchar_t letter)
     placedLetter.letter = letter;
 }
 
-void BaldaGame::placeLetter(int x, int y)
-{
-    if (!onField(x, y))
-        return;
-    if (placedLetter == BLANK_LETTER)
-        return;
-    if (placedLetter) {
-        field[placedLetter.x][placedLetter.y].letter = BLANK_LETTER;
-    }
-    field[x][y].letter = placedLetter.letter;
-    placedLetter.x = x;
-    placedLetter.y = y;
-}
-
 void BaldaGame::selectLetter(int x, int y)
 {
-    if (!placedLetter)
-        return;
     if (!onField(x, y))
         return;
     if (placedLetter == BLANK_LETTER)
         return;
+    if (!placedLetter) {
+        field[x][y].letter = placedLetter.letter;
+        placedLetter.x = x;
+        placedLetter.y = y;
+        return;
+    }
 
     Cell cell = getCell(x, y);
+    if (cell.letter == BLANK_LETTER)
+        return;
+
     if (selectedWord.size()) {
         Cell lastCell = selectedWord.back();
         if (lastCell == cell) {
@@ -144,6 +141,11 @@ void BaldaGame::selectLetter(int x, int y)
     } else {
         selectedWord.push_back(cell);
     }
+}
+
+vector<BaldaGame::Cell> BaldaGame::getSelectedWord()
+{
+    return selectedWord;
 }
 
 wstring BaldaGame::getWord()
@@ -172,7 +174,11 @@ BaldaGame::Cell BaldaGame::getCell(int x, int y) const
 
 void BaldaGame::removeLetter()
 {
+    if (placedLetter) {
+        field[placedLetter.x][placedLetter.y].letter = BLANK_LETTER;
+    }
     placedLetter = Cell();
+    selectedWord.clear();
 }
 
 bool BaldaGame::isWord()
@@ -204,6 +210,22 @@ void BaldaGame::sendSelectedWord()
     }
 
     sentWords.push_back(currentWord);
-    removeLetter();
+
+    Player& currentPlayer = players[playerMove];
+    currentPlayer.words.push_back(sentWords.back());
+    currentPlayer.score += currentWord.size();
+    playerMove = (playerMove + 1) % PLAYER_COUNT;
+
+    placedLetter = Cell();
     selectedWord.clear();
+}
+
+BaldaGame::Player* BaldaGame::getPlayer(int index)
+{
+    return &players[index];
+}
+
+BaldaGame::Player::Player()
+    : score(0)
+{
 }

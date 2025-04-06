@@ -2,6 +2,7 @@
 #include "game.hpp"
 #include <Windows.h>
 #include <iostream>
+#include <string>
 #include <vector>
 
 using namespace std;
@@ -19,25 +20,25 @@ UserInterface::Coord::Coord(int x, int y)
 }
 
 UserInterface::Button::Button()
+    : pos()
+    , size()
+    , selected(0)
 {
-    pos = Coord();
-    size = Coord();
-    selected = 0;
 }
 
 UserInterface::Button::Button(int x, int y, int width, int height)
+    : pos(x, y)
+    , size(width, height)
+    , selected(0)
 {
-    pos = Coord(x, y);
-    size = Coord(width, height);
-    selected = 0;
 }
 
 UserInterface::Button::Button(int x, int y, int width, int height, wstring text)
+    : pos(x, y)
+    , size(width, height)
+    , selected(0)
 {
-    pos = Coord(x, y);
-    size = Coord(width, height);
     this->text = text;
-    selected = 0;
 }
 
 void UserInterface::Button::draw(HANDLE& handle) const
@@ -49,10 +50,11 @@ void UserInterface::Button::draw(HANDLE& handle) const
         coord.X = x;
         for (int y = pos.y; y < pos.y + size.y; y++) {
             coord.Y = y;
-            wchar_t border = BUTTON_BORDERS[selected + 2 * (1 * (x == pos.x && y == pos.y) + 2 * (x == pos.x + size.x - 1 && y == pos.y) + 3 * (x == pos.x + size.x - 1 && y == pos.y + size.y - 1) + 4 * (x == pos.x && y == pos.y + size.y - 1) + 5 * ((x == pos.x || x == pos.x + size.x - 1) && pos.y < y && y < pos.y + size.y - 1) + 6 * (pos.x < x && x < pos.x + size.x - 1 && (y == pos.y || y == pos.y + size.y - 1)))];
-            WriteConsoleOutputCharacter(handle, &border, 1, coord, &_);
             if (x >= textCoord.x && x < textCoord.x + text.size() && y == textCoord.y) {
                 WriteConsoleOutputCharacter(handle, &text[size_t(x - textCoord.x)], 1, coord, &_);
+            } else {
+                wchar_t border = BUTTON_BORDERS[selected + 2 * (1 * (x == pos.x && y == pos.y) + 2 * (x == pos.x + size.x - 1 && y == pos.y) + 3 * (x == pos.x + size.x - 1 && y == pos.y + size.y - 1) + 4 * (x == pos.x && y == pos.y + size.y - 1) + 5 * ((x == pos.x || x == pos.x + size.x - 1) && pos.y < y && y < pos.y + size.y - 1) + 6 * (pos.x < x && x < pos.x + size.x - 1 && (y == pos.y || y == pos.y + size.y - 1)))];
+                WriteConsoleOutputCharacter(handle, &border, 1, coord, &_);
             }
         }
     }
@@ -75,7 +77,90 @@ UserInterface::Coord UserInterface::Button::getSize() const
 
 void UserInterface::Button::onClick()
 {
-    cout << "1";
+}
+
+UserInterface::StartGameButton::StartGameButton(BaldaGame* game)
+    : Button(START_GAME_BUTTON_X, START_GAME_BUTTON_Y,
+          START_GAME_BUTTON_WIDTH, START_GAME_BUTTON_HEIGHT,
+          START_GAME_TEXT)
+{
+    this->game = game;
+}
+
+void UserInterface::StartGameButton::onClick()
+{
+}
+
+UserInterface::MissMoveButton::MissMoveButton(BaldaGame* game)
+    : Button(MISS_MOVE_BUTTON_X, MISS_MOVE_BUTTON_Y,
+          MISS_MOVE_BUTTON_WIDTH, MISS_MOVE_BUTTON_HEIGHT,
+          MISS_MOVE_TEXT)
+{
+    this->game = game;
+}
+
+void UserInterface::MissMoveButton::onClick()
+{
+}
+
+UserInterface::RemoveLetterButton::RemoveLetterButton(BaldaGame* game)
+    : Button(REMOVE_LETTER_BUTTON_X, REMOVE_LETTER_BUTTON_Y,
+          REMOVE_LETTER_BUTTON_WIDTH, REMOVE_LETTER_BUTTON_HEIGHT,
+          REMOVE_LETTER_TEXT)
+{
+    this->game = game;
+}
+
+void UserInterface::RemoveLetterButton::onClick()
+{
+    game->removeLetter();
+}
+
+UserInterface::FieldButton::FieldButton(int x, int y, int fieldX, int fieldY, wchar_t letter, BaldaGame* game)
+    : Button(x, y, FIELD_BUTTON_WIDTH, FIELD_BUTTON_HEIGHT, wstring(1, letter))
+    , fieldPos(fieldX, fieldY)
+{
+    this->game = game;
+}
+
+void UserInterface::FieldButton::onClick()
+{
+    game->selectLetter(fieldPos.x, fieldPos.y);
+}
+
+void UserInterface::FieldButton::setLetter(wchar_t letter)
+{
+    text = wstring(1, letter);
+}
+
+// void UserInterface::FieldButton::draw(HANDLE& handle) const
+//{
+// }
+
+UserInterface::WordButton::WordButton(BaldaGame* game)
+    : Button(WORD_BUTTON_X, WORD_BUTTON_Y, WORD_BUTTON_WIDTH, WORD_BUTTON_HEIGHT, wstring())
+{
+    this->game = game;
+}
+
+void UserInterface::WordButton::onClick()
+{
+    game->sendSelectedWord();
+}
+
+void UserInterface::WordButton::update()
+{
+    text.clear();
+    wstring word = game->getWord();
+    if (!word.size())
+        return;
+    for (wchar_t letter : word) {
+        text.push_back(letter);
+    }
+    text.append(L" (");
+    wstring score = to_wstring(int(word.size()));
+    text.append(score);
+    text.append(L")");
 }
 
 UserInterface::LetterButton::LetterButton(int x, int y, wchar_t letter, BaldaGame* game)
@@ -86,7 +171,6 @@ UserInterface::LetterButton::LetterButton(int x, int y, wchar_t letter, BaldaGam
 
 void UserInterface::LetterButton::onClick()
 {
-    cout << "2";
     game->selectLetter(text[0]);
 }
 
@@ -103,20 +187,22 @@ void UserInterface::ButtonGrid::draw(HANDLE& handle)
 {
     for (int x = 0; x < size.x; x++) {
         for (int y = 0; y < size.y; y++) {
-            Button& button = grid[x][y];
-            button.draw(handle);
+            Button* button = grid[x][y];
+            if (button) {
+                button->draw(handle);
+            }
         }
     }
 }
 
-void UserInterface::ButtonGrid::placeButton(int x, int y, Button& button)
+void UserInterface::ButtonGrid::placeButton(int x, int y, Button* button)
 {
     grid[x][y] = button;
 }
 
 UserInterface::Button* UserInterface::ButtonGrid::getButton(int x, int y)
 {
-    return &grid[x][y];
+    return grid[x][y];
 }
 
 UserInterface::Coord UserInterface::ButtonGrid::getSize()
@@ -149,7 +235,9 @@ void UserInterface::mouseEvent(MOUSE_EVENT_RECORD mouseEventRecord)
     case 0:
         switch (mouseEventRecord.dwButtonState) {
         case FROM_LEFT_1ST_BUTTON_PRESSED:
-            selectedButton->onClick();
+            if (selectedButton) {
+                selectedButton->onClick();
+            }
             break;
         default:
             break;
@@ -217,24 +305,9 @@ UserInterface::UserInterface(BaldaGame* gamePtr, HANDLE hStdIn, HANDLE hStdOut)
     MoveWindow(hWindowConsole, 0, 0, CONSOLE_WIDTH * 8, CONSOLE_HEIGHT * 18, true);
     SetConsoleMode(handleInput, ENABLE_MOUSE_INPUT);
 
-    Button startGameButton = Button(
-        START_GAME_BUTTON_X,
-        START_GAME_BUTTON_Y,
-        START_GAME_BUTTON_WIDTH,
-        START_GAME_BUTTON_HEIGHT,
-        START_GAME_TEXT);
-    Button missMoveButton = Button(
-        MISS_MOVE_BUTTON_X,
-        MISS_MOVE_BUTTON_Y,
-        MISS_MOVE_BUTTON_WIDTH,
-        MISS_MOVE_BUTTON_HEIGHT,
-        MISS_MOVE_TEXT);
-    Button removeLetterButton = Button(
-        REMOVE_LETTER_BUTTON_X,
-        REMOVE_LETTER_BUTTON_Y,
-        REMOVE_LETTER_BUTTON_WIDTH,
-        REMOVE_LETTER_BUTTON_HEIGHT,
-        DELETE_LETTER_TEXT);
+    StartGameButton* startGameButton = new StartGameButton(game);
+    MissMoveButton* missMoveButton = new MissMoveButton(game);
+    RemoveLetterButton* removeLetterButton = new RemoveLetterButton(game);
 
     ButtonGrid menuButtonGrid = ButtonGrid(3, 1);
     menuButtonGrid.placeButton(0, 0, startGameButton);
@@ -244,20 +317,24 @@ UserInterface::UserInterface(BaldaGame* gamePtr, HANDLE hStdIn, HANDLE hStdOut)
     ButtonGrid fieldButtonGrid = ButtonGrid(BOARD_SIZE, BOARD_SIZE);
     for (int x = 0; x < BOARD_SIZE; x++) {
         for (int y = 0; y < BOARD_SIZE; y++) {
-            Button fieldButton = Button(
+            FieldButton* fieldButton = new FieldButton(
                 FIELD_BUTTON_X + x * FIELD_BUTTON_WIDTH,
                 FIELD_BUTTON_Y + y * FIELD_BUTTON_HEIGHT,
-                FIELD_BUTTON_WIDTH,
-                FIELD_BUTTON_HEIGHT,
-                wstring(1, game->getLetter(x, y)));
+                x, y,
+                game->getLetter(x, y),
+                game);
             fieldButtonGrid.placeButton(x, y, fieldButton);
         }
     }
 
+    ButtonGrid wordButtonGrid = ButtonGrid(1, 1);
+    WordButton* wordButton = new WordButton(game);
+    wordButtonGrid.placeButton(0, 0, wordButton);
+
     ButtonGrid letterButtonGrid = ButtonGrid(LETTERS_BUTTON_GRID_WIDTH, LETTERS_BUTTON_GRID_HEIGHT);
     for (int x = 0; x < LETTERS_BUTTON_GRID_WIDTH; x++) {
         for (int y = 0; y < LETTERS_BUTTON_GRID_HEIGHT; y++) {
-            LetterButton letterButton = LetterButton(
+            LetterButton* letterButton = new LetterButton(
                 LETTER_BUTTON_X + x * LETTER_BUTTON_WIDTH,
                 LETTER_BUTTON_Y + y * LETTER_BUTTON_HEIGHT,
                 RUSSIAN_LETTERS[x + y * LETTERS_BUTTON_GRID_WIDTH],
@@ -268,7 +345,14 @@ UserInterface::UserInterface(BaldaGame* gamePtr, HANDLE hStdIn, HANDLE hStdOut)
 
     buttonGrids.push_back(menuButtonGrid);
     buttonGrids.push_back(fieldButtonGrid);
+    buttonGrids.push_back(wordButtonGrid);
     buttonGrids.push_back(letterButtonGrid);
+
+    PlayerStats player1Stats = PlayerStats(PLAYER1_STATS_X, PLAYER1_STATS_Y, game->getPlayer(0));
+    PlayerStats player2Stats = PlayerStats(PLAYER2_STATS_X, PLAYER2_STATS_Y, game->getPlayer(1));
+
+    playerStats.push_back(player1Stats);
+    playerStats.push_back(player2Stats);
 
     for (int i = 0; i < CONSOLE_HEIGHT; i++) {
         cout << endl;
@@ -279,34 +363,53 @@ void UserInterface::update()
 {
     draw();
 
-    ButtonGrid& previousButtonGrid = buttonGrids[tabIndex];
-    previousButtonGrid.getButton(buttonGridPos.x, buttonGridPos.y)->setSelected(false);
+    for (ButtonGrid& buttonGrid : buttonGrids) {
+        Coord size = buttonGrid.getSize();
+        for (int x = 0; x < size.x; x++) {
+            for (int y = 0; y < size.y; y++) {
+                buttonGrid.getButton(x, y)->setSelected(false);
+            }
+        }
+    }
 
-    BaldaGame::Cell cell = game->getPlacedLetter();
+    ButtonGrid& fieldButtonGrid = buttonGrids[FIELD_BUTTON_GRID_INDEX];
+    for (auto& cell : game->getSelectedWord()) {
+        Button* button = fieldButtonGrid.getButton(cell.x, cell.y);
+        button->setSelected(true);
+    }
+
+    auto cell = game->getPlacedLetter();
     for (int x = 0; x < LETTERS_BUTTON_GRID_WIDTH; x++) {
         for (int y = 0; y < LETTERS_BUTTON_GRID_HEIGHT; y++) {
+            ButtonGrid& buttonGrid = buttonGrids[LETTERS_BUTTON_GRID_INDEX];
             if (cell.letter == RUSSIAN_LETTERS[x + y * LETTERS_BUTTON_GRID_WIDTH]) {
-                ButtonGrid& buttonGrid = buttonGrids[LETTERS_BUTTON_GRID_INDEX];
                 buttonGrid.getButton(x, y)->setSelected(true);
                 break;
             }
         }
     }
 
+    for (int x = 0; x < BOARD_SIZE; x++) {
+        for (int y = 0; y < BOARD_SIZE; y++) {
+            ButtonGrid& buttonGrid = buttonGrids[FIELD_BUTTON_GRID_INDEX];
+            FieldButton* button = (FieldButton*)buttonGrid.getButton(x, y);
+            button->setLetter(game->getLetter(x, y));
+        }
+    }
+
+    ButtonGrid& wordButtonGrid = buttonGrids[WORD_BUTTON_GRID_INDEX];
+    WordButton* wordButton = (WordButton*)wordButtonGrid.getButton(0, 0);
+    wordButton->update();
+
     DWORD eventCount;
     INPUT_RECORD inputRecordBuffer[128];
     ReadConsoleInput(handleInput, inputRecordBuffer, 128, &eventCount);
 
     for (DWORD i = 0; i < eventCount; i++) {
-        switch (inputRecordBuffer[i].EventType) {
-        case KEY_EVENT:
+        if (inputRecordBuffer[i].EventType == KEY_EVENT) {
             keyboardEvent(inputRecordBuffer[i].Event.KeyEvent);
-            break;
-        case MOUSE_EVENT:
+        } else if (inputRecordBuffer[i].EventType == MOUSE_EVENT) {
             mouseEvent(inputRecordBuffer[i].Event.MouseEvent);
-            break;
-        default:
-            break;
         }
     }
 
@@ -318,7 +421,40 @@ void UserInterface::update()
 
 void UserInterface::draw()
 {
-    for (ButtonGrid buttonGrid : buttonGrids) {
+    for (ButtonGrid& buttonGrid : buttonGrids) {
         buttonGrid.draw(handleOutput);
+    }
+    for (PlayerStats& playerNStats : playerStats) {
+        playerNStats.draw(handleOutput);
+    }
+}
+
+UserInterface::PlayerStats::PlayerStats(int x, int y, BaldaGame::Player* playerPtr)
+    : Button(x, y, PLAYER_STATS_WIDTH, PLAYER_STATS_HEIGHT)
+    , player(playerPtr)
+{
+}
+
+void UserInterface::PlayerStats::draw(HANDLE& handle) const
+{
+    COORD coord {};
+    DWORD _;
+    Coord wordsCoord = Coord(pos.x + 2, pos.y + size.y - 3 - int(player->words.size()));
+    Coord scoreCoord = Coord(pos.x + 2, pos.y + size.y - 2);
+    wstring scoreText = to_wstring(player->score);
+    for (int x = pos.x; x < pos.x + size.x; x++) {
+        coord.X = x;
+        for (int y = pos.y; y < pos.y + size.y; y++) {
+            coord.Y = y;
+            if (x >= scoreCoord.x && x < scoreCoord.x + scoreText.size() && y == scoreCoord.y) {
+                WriteConsoleOutputCharacter(handle, &scoreText[size_t(x - scoreCoord.x)], 1, coord, &_);
+            } else if (y > pos.y + 1 && y >= wordsCoord.y && y < wordsCoord.y + int(player->words.size()) && x >= wordsCoord.x && x < wordsCoord.x + player->words[size_t(y - wordsCoord.y)].size()) {
+                wstring& word = player->words[size_t(y - wordsCoord.y)];
+                WriteConsoleOutputCharacter(handle, &word[size_t(x - scoreCoord.x)], 1, coord, &_);
+            } else {
+                wchar_t border = BUTTON_BORDERS[selected + 2 * (1 * (x == pos.x && y == pos.y) + 2 * (x == pos.x + size.x - 1 && y == pos.y) + 3 * (x == pos.x + size.x - 1 && y == pos.y + size.y - 1) + 4 * (x == pos.x && y == pos.y + size.y - 1) + 5 * ((x == pos.x || x == pos.x + size.x - 1) && pos.y < y && y < pos.y + size.y - 1) + 6 * (pos.x < x && x < pos.x + size.x - 1 && (y == pos.y || y == pos.y + size.y - 1)))];
+                WriteConsoleOutputCharacter(handle, &border, 1, coord, &_);
+            }
+        }
     }
 }
