@@ -6,6 +6,7 @@
 using namespace std;
 
 class BaldaGame {
+public:
     struct Cell {
         int x, y;
         wchar_t letter;
@@ -19,6 +20,7 @@ class BaldaGame {
         explicit operator bool() const;
     };
 
+private:
     Cell field[BOARD_SIZE][BOARD_SIZE];
     vector<Cell> selectedWord;
     Cell placedLetter;
@@ -30,6 +32,7 @@ class BaldaGame {
 public:
     wstring getWord();
     wchar_t getLetter(int x, int y) const;
+    Cell getPlacedLetter() const;
     Cell getCell(int x, int y) const;
     BaldaGame();
     BaldaGame(wstring word);

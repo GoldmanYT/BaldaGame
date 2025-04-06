@@ -160,6 +160,11 @@ wchar_t BaldaGame::getLetter(int x, int y) const
     return field[x][y].letter;
 }
 
+BaldaGame::Cell BaldaGame::getPlacedLetter() const
+{
+    return placedLetter;
+}
+
 BaldaGame::Cell BaldaGame::getCell(int x, int y) const
 {
     return field[x][y];

@@ -5,6 +5,7 @@ const int BOARD_SIZE = 5;
 const int CONSOLE_WIDTH = 66;
 const int CONSOLE_HEIGHT = 32;
 
+const int MENU_BUTTON_GRID_INDEX = 0;
 const int MENU_BUTTON_GRID_WIDTH = 3;
 const int MENU_BUTTON_GRID_HEIGHT = 1;
 
@@ -18,23 +19,25 @@ const int MISS_MOVE_BUTTON_Y = 0;
 const int MISS_MOVE_BUTTON_WIDTH = 19;
 const int MISS_MOVE_BUTTON_HEIGHT = 3;
 
-const int DELETE_LETTER_BUTTON_X = 41;
-const int DELETE_LETTER_BUTTON_Y = 0;
-const int DELETE_LETTER_BUTTON_WIDTH = 19;
-const int DELETE_LETTER_BUTTON_HEIGHT = 3;
+const int REMOVE_LETTER_BUTTON_X = 41;
+const int REMOVE_LETTER_BUTTON_Y = 0;
+const int REMOVE_LETTER_BUTTON_WIDTH = 19;
+const int REMOVE_LETTER_BUTTON_HEIGHT = 3;
 
+const int FIELD_BUTTON_GRID_INDEX = 1;
 const int FIELD_BUTTON_X = 18;
 const int FIELD_BUTTON_Y = 5;
 const int FIELD_BUTTON_WIDTH = 5;
 const int FIELD_BUTTON_HEIGHT = 3;
 
+const int LETTERS_BUTTON_GRID_INDEX = 2;
 const int LETTERS_BUTTON_GRID_WIDTH = 11;
 const int LETTERS_BUTTON_GRID_HEIGHT = 3;
 
-const int LETTERS_BUTTON_X = 3;
-const int LETTERS_BUTTON_Y = 22;
-const int LETTERS_BUTTON_WIDTH = 5;
-const int LETTERS_BUTTON_HEIGHT = 3;
+const int LETTER_BUTTON_X = 3;
+const int LETTER_BUTTON_Y = 22;
+const int LETTER_BUTTON_WIDTH = 5;
+const int LETTER_BUTTON_HEIGHT = 3;
 
 const wchar_t BUTTON_BORDERS[] = L"  ┌╔┐╗┘╝└╚│║─═";
 

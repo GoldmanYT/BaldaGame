@@ -7,12 +7,16 @@
 using namespace std;
 
 class UserInterface {
+public:
     struct Coord {
         int x, y;
         Coord();
         Coord(int x, int y);
     };
+
+private:
     class Button {
+    protected:
         Coord pos;
         Coord size;
         wstring text;
@@ -26,6 +30,22 @@ class UserInterface {
         void setSelected(bool state);
         Coord getPos() const;
         Coord getSize() const;
+        virtual void onClick();
+    };
+    class StartGameButton : public Button {
+    };
+    class MissMoveButton : public Button {
+    };
+    class RemoveLetterButton : public Button {
+    };
+    class FieldButton : public Button {
+    };
+    class LetterButton : public Button {
+        BaldaGame* game;
+
+    public:
+        LetterButton(int x, int y, wchar_t letter, BaldaGame* game);
+        void onClick() override;
     };
     class ButtonGrid {
         Coord size;

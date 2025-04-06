@@ -73,6 +73,23 @@ UserInterface::Coord UserInterface::Button::getSize() const
     return size;
 }
 
+void UserInterface::Button::onClick()
+{
+    cout << "1";
+}
+
+UserInterface::LetterButton::LetterButton(int x, int y, wchar_t letter, BaldaGame* game)
+    : Button(x, y, LETTER_BUTTON_WIDTH, LETTER_BUTTON_HEIGHT, wstring(1, letter))
+{
+    this->game = game;
+}
+
+void UserInterface::LetterButton::onClick()
+{
+    cout << "2";
+    game->selectLetter(text[0]);
+}
+
 UserInterface::ButtonGrid::ButtonGrid(int width, int height)
 {
     size = Coord(width, height);
@@ -132,7 +149,7 @@ void UserInterface::mouseEvent(MOUSE_EVENT_RECORD mouseEventRecord)
     case 0:
         switch (mouseEventRecord.dwButtonState) {
         case FROM_LEFT_1ST_BUTTON_PRESSED:
-            // Обработчик нажатия кнопки
+            selectedButton->onClick();
             break;
         default:
             break;
@@ -173,10 +190,13 @@ void UserInterface::keyboardEvent(KEY_EVENT_RECORD keyEventRecord)
                 tabIndex = (tabIndex + 1) % int(buttonGrids.size());
             }
             break;
-        case VK_SPACE:
+        case VK_SPACE: {
         case VK_RETURN:
-            // Обработчик нажатия кнопки
+            ButtonGrid& buttonGrid = buttonGrids[tabIndex];
+            Button* button = buttonGrid.getButton(buttonGridPos.x, buttonGridPos.y);
+            button->onClick();
             break;
+        }
         default:
             break;
         }
@@ -209,17 +229,17 @@ UserInterface::UserInterface(BaldaGame* gamePtr, HANDLE hStdIn, HANDLE hStdOut)
         MISS_MOVE_BUTTON_WIDTH,
         MISS_MOVE_BUTTON_HEIGHT,
         MISS_MOVE_TEXT);
-    Button deleteLetterButton = Button(
-        DELETE_LETTER_BUTTON_X,
-        DELETE_LETTER_BUTTON_Y,
-        DELETE_LETTER_BUTTON_WIDTH,
-        DELETE_LETTER_BUTTON_HEIGHT,
+    Button removeLetterButton = Button(
+        REMOVE_LETTER_BUTTON_X,
+        REMOVE_LETTER_BUTTON_Y,
+        REMOVE_LETTER_BUTTON_WIDTH,
+        REMOVE_LETTER_BUTTON_HEIGHT,
         DELETE_LETTER_TEXT);
 
     ButtonGrid menuButtonGrid = ButtonGrid(3, 1);
     menuButtonGrid.placeButton(0, 0, startGameButton);
     menuButtonGrid.placeButton(1, 0, missMoveButton);
-    menuButtonGrid.placeButton(2, 0, deleteLetterButton);
+    menuButtonGrid.placeButton(2, 0, removeLetterButton);
 
     ButtonGrid fieldButtonGrid = ButtonGrid(BOARD_SIZE, BOARD_SIZE);
     for (int x = 0; x < BOARD_SIZE; x++) {
@@ -237,12 +257,11 @@ UserInterface::UserInterface(BaldaGame* gamePtr, HANDLE hStdIn, HANDLE hStdOut)
     ButtonGrid letterButtonGrid = ButtonGrid(LETTERS_BUTTON_GRID_WIDTH, LETTERS_BUTTON_GRID_HEIGHT);
     for (int x = 0; x < LETTERS_BUTTON_GRID_WIDTH; x++) {
         for (int y = 0; y < LETTERS_BUTTON_GRID_HEIGHT; y++) {
-            Button letterButton = Button(
-                LETTERS_BUTTON_X + x * LETTERS_BUTTON_WIDTH,
-                LETTERS_BUTTON_Y + y * LETTERS_BUTTON_HEIGHT,
-                LETTERS_BUTTON_WIDTH,
-                LETTERS_BUTTON_HEIGHT,
-                wstring(1, RUSSIAN_LETTERS[x + y * LETTERS_BUTTON_GRID_WIDTH]));
+            LetterButton letterButton = LetterButton(
+                LETTER_BUTTON_X + x * LETTER_BUTTON_WIDTH,
+                LETTER_BUTTON_Y + y * LETTER_BUTTON_HEIGHT,
+                RUSSIAN_LETTERS[x + y * LETTERS_BUTTON_GRID_WIDTH],
+                game);
             letterButtonGrid.placeButton(x, y, letterButton);
         }
     }
@@ -262,6 +281,17 @@ void UserInterface::update()
 
     ButtonGrid& previousButtonGrid = buttonGrids[tabIndex];
     previousButtonGrid.getButton(buttonGridPos.x, buttonGridPos.y)->setSelected(false);
+
+    BaldaGame::Cell cell = game->getPlacedLetter();
+    for (int x = 0; x < LETTERS_BUTTON_GRID_WIDTH; x++) {
+        for (int y = 0; y < LETTERS_BUTTON_GRID_HEIGHT; y++) {
+            if (cell.letter == RUSSIAN_LETTERS[x + y * LETTERS_BUTTON_GRID_WIDTH]) {
+                ButtonGrid& buttonGrid = buttonGrids[LETTERS_BUTTON_GRID_INDEX];
+                buttonGrid.getButton(x, y)->setSelected(true);
+                break;
+            }
+        }
+    }
 
     DWORD eventCount;
     INPUT_RECORD inputRecordBuffer[128];
