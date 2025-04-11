@@ -28,7 +28,7 @@ class UserInterface {
         void setSelected(bool state);
         Coord getPos() const;
         Coord getSize() const;
-        virtual void onClick();
+        virtual void onClick() = 0;
     };
     class StartGameButton : public Button {
         BaldaGame* game;
@@ -78,6 +78,7 @@ class UserInterface {
     };
     class PlayerStats : Button {
         BaldaGame::Player* player;
+        void onClick();
 
     public:
         PlayerStats(int x, int y, BaldaGame::Player* playerPtr);

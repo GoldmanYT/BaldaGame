@@ -75,10 +75,6 @@ UserInterface::Coord UserInterface::Button::getSize() const
     return size;
 }
 
-void UserInterface::Button::onClick()
-{
-}
-
 UserInterface::StartGameButton::StartGameButton(BaldaGame* game)
     : Button(START_GAME_BUTTON_X, START_GAME_BUTTON_Y,
           START_GAME_BUTTON_WIDTH, START_GAME_BUTTON_HEIGHT,
@@ -427,6 +423,10 @@ void UserInterface::draw()
     for (PlayerStats& playerNStats : playerStats) {
         playerNStats.draw(handleOutput);
     }
+}
+
+void UserInterface::PlayerStats::onClick()
+{
 }
 
 UserInterface::PlayerStats::PlayerStats(int x, int y, BaldaGame::Player* playerPtr)

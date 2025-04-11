@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "consts.hpp"
 #include <iostream>
+#include <set>
 #include <vector>
 
 using namespace std;
@@ -20,7 +21,7 @@ class BaldaGame {
 
 public:
     struct Player {
-        int score;
+        int score, missedMoves;
         vector<wstring> words;
         Player();
     };
@@ -33,8 +34,12 @@ private:
     vector<Player> players;
     int playerMove;
 
+public:
+    set<wstring> words;
+
     bool isNeighbor(Cell c1, Cell c2);
     bool onField(int x, int y);
+    void loadWords();
 
 public:
     vector<Cell> getSelectedWord();
@@ -50,5 +55,7 @@ public:
     void removeLetter();
     bool isWord();
     void sendSelectedWord();
+    void missMove();
     Player* getPlayer(int index);
+    Player* getCurrentPlayer();
 };

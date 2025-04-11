@@ -5,7 +5,7 @@ int main()
     HANDLE hStdIn = GetStdHandle(STD_INPUT_HANDLE);
     HANDLE hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
 
-    BaldaGame game(L"ПАЛКА");
+    BaldaGame game = BaldaGame();
     UserInterface UI = UserInterface(&game, hStdIn, hStdOut);
 
     while (1) {

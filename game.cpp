@@ -1,4 +1,5 @@
 ﻿#include "game.hpp"
+#include <fstream>
 
 using namespace std;
 
@@ -45,14 +46,23 @@ BaldaGame::Cell::operator bool() const
 
 BaldaGame::BaldaGame()
 {
+    wstring word = L"БАЛДА";
     for (int y = 0; y < BOARD_SIZE; y++) {
-        for (int x = 0; x < BOARD_SIZE; x++) {
-            field[x][y] = Cell(x, y);
+        if (y == BOARD_SIZE / 2) {
+            for (int x = 0; x < BOARD_SIZE; x++) {
+                field[x][y] = Cell(x, y, word[x]);
+            }
+        } else {
+            for (int x = 0; x < BOARD_SIZE; x++) {
+                field[x][y] = Cell(x, y);
+            }
         }
     }
     placedLetter = Cell();
     playerMove = 0;
     players.resize(PLAYER_COUNT);
+    sentWords.push_back(word);
+    loadWords();
 }
 
 BaldaGame::BaldaGame(wstring word)
@@ -71,6 +81,8 @@ BaldaGame::BaldaGame(wstring word)
     placedLetter = Cell();
     playerMove = 0;
     players.resize(PLAYER_COUNT);
+    sentWords.push_back(word);
+    loadWords();
 }
 
 void BaldaGame::print() const
@@ -94,6 +106,29 @@ void BaldaGame::print() const
 bool BaldaGame::onField(int x, int y)
 {
     return (0 <= x) && (x < BOARD_SIZE) && (0 <= y) && (y < BOARD_SIZE);
+}
+
+void BaldaGame::loadWords()
+{
+    wifstream file("words.txt", 'b');
+    wstring word;
+
+    if (file.is_open()) {
+        wchar_t c1 = file.get(), c2 = file.get();
+        while (file) {
+            wchar_t c = (c1 << 8) | c2;
+            if (c != L'\n') {
+                word.push_back(c);
+            } else {
+                words.insert(word);
+                word.clear();
+            }
+            c1 = file.get();
+            c2 = file.get();
+        }
+    }
+
+    file.close();
 }
 
 bool BaldaGame::isNeighbor(Cell c1, Cell c2)
@@ -184,7 +219,7 @@ void BaldaGame::removeLetter()
 bool BaldaGame::isWord()
 {
     wstring word = getWord();
-    return true;
+    return words.count(word);
 }
 
 void BaldaGame::sendSelectedWord()
@@ -211,13 +246,17 @@ void BaldaGame::sendSelectedWord()
 
     sentWords.push_back(currentWord);
 
-    Player& currentPlayer = players[playerMove];
-    currentPlayer.words.push_back(sentWords.back());
-    currentPlayer.score += currentWord.size();
+    Player* currentPlayer = getCurrentPlayer();
+    currentPlayer->words.push_back(sentWords.back());
+    currentPlayer->score += int(currentWord.size());
     playerMove = (playerMove + 1) % PLAYER_COUNT;
 
     placedLetter = Cell();
     selectedWord.clear();
+}
+
+void BaldaGame::missMove()
+{
 }
 
 BaldaGame::Player* BaldaGame::getPlayer(int index)
@@ -225,7 +264,13 @@ BaldaGame::Player* BaldaGame::getPlayer(int index)
     return &players[index];
 }
 
+BaldaGame::Player* BaldaGame::getCurrentPlayer()
+{
+    return &players[playerMove];
+}
+
 BaldaGame::Player::Player()
     : score(0)
+    , missedMoves(0)
 {
 }
