@@ -1,5 +1,7 @@
 ﻿#include "game.hpp"
 #include <fstream>
+#include <random>
+#include <ctime>
 
 using namespace std;
 
@@ -46,7 +48,9 @@ BaldaGame::Cell::operator bool() const
 
 BaldaGame::BaldaGame()
 {
-    wstring word = L"БАЛДА";
+    loadWords();
+    srand(unsigned int(time(0)));
+    wstring word = startWords[rand() % startWords.size()];
     for (int y = 0; y < BOARD_SIZE; y++) {
         if (y == BOARD_SIZE / 2) {
             for (int x = 0; x < BOARD_SIZE; x++) {
@@ -60,9 +64,9 @@ BaldaGame::BaldaGame()
     }
     placedLetter = Cell();
     playerMove = 0;
+    gameState = inGame;
     players.resize(PLAYER_COUNT);
     sentWords.push_back(word);
-    loadWords();
 }
 
 BaldaGame::BaldaGame(wstring word)
@@ -80,27 +84,33 @@ BaldaGame::BaldaGame(wstring word)
     }
     placedLetter = Cell();
     playerMove = 0;
+    gameState = inGame;
     players.resize(PLAYER_COUNT);
     sentWords.push_back(word);
     loadWords();
 }
 
-void BaldaGame::print() const
+void BaldaGame::newGame()
 {
-    for (int x = 0; x < BOARD_SIZE; x++) {
-        wcout << L"+---";
-    }
-    wcout << L"+\n";
+    wstring word = startWords[rand() % startWords.size()];
     for (int y = 0; y < BOARD_SIZE; y++) {
-        for (int x = 0; x < BOARD_SIZE; x++) {
-            wcout << L"| " << field[x][y].letter << L" ";
+        if (y == BOARD_SIZE / 2) {
+            for (int x = 0; x < BOARD_SIZE; x++) {
+                field[x][y] = Cell(x, y, word[x]);
+            }
+        } else {
+            for (int x = 0; x < BOARD_SIZE; x++) {
+                field[x][y] = Cell(x, y);
+            }
         }
-        wcout << L"|\n";
-        for (int x = 0; x < BOARD_SIZE; x++) {
-            wcout << L"+---";
-        }
-        wcout << L"+\n";
     }
+    placedLetter = Cell();
+    playerMove = 0;
+    gameState = inGame;
+    players.clear();
+    players.resize(PLAYER_COUNT);
+    sentWords.clear();
+    sentWords.push_back(word);
 }
 
 bool BaldaGame::onField(int x, int y)
@@ -121,6 +131,9 @@ void BaldaGame::loadWords()
                 word.push_back(c);
             } else {
                 words.insert(word);
+                if (word.size() == BOARD_SIZE) {
+                    startWords.push_back(word);
+                }
                 word.clear();
             }
             c1 = file.get();
@@ -138,16 +151,22 @@ bool BaldaGame::isNeighbor(Cell c1, Cell c2)
 
 void BaldaGame::selectLetter(wchar_t letter)
 {
+    if (gameState != inGame)
+        return;
     placedLetter.letter = letter;
 }
 
 void BaldaGame::selectLetter(int x, int y)
 {
+    if (gameState != inGame)
+        return;
     if (!onField(x, y))
         return;
     if (placedLetter == BLANK_LETTER)
         return;
     if (!placedLetter) {
+        if (getLetter(x, y) != BLANK_LETTER)
+            return;
         field[x][y].letter = placedLetter.letter;
         placedLetter.x = x;
         placedLetter.y = y;
@@ -224,6 +243,8 @@ bool BaldaGame::isWord()
 
 void BaldaGame::sendSelectedWord()
 {
+    if (gameState != inGame)
+        return;
     if (!isWord())
         return;
 
@@ -249,14 +270,21 @@ void BaldaGame::sendSelectedWord()
     Player* currentPlayer = getCurrentPlayer();
     currentPlayer->words.push_back(sentWords.back());
     currentPlayer->score += int(currentWord.size());
-    playerMove = (playerMove + 1) % PLAYER_COUNT;
+    toNextPlayer();
 
     placedLetter = Cell();
     selectedWord.clear();
+    updateGameState();
 }
 
 void BaldaGame::missMove()
 {
+    if (gameState != inGame)
+        return;
+    Player* player = getCurrentPlayer();
+    player->missedMoves++;
+    toNextPlayer();
+    updateGameState();
 }
 
 BaldaGame::Player* BaldaGame::getPlayer(int index)
@@ -267,6 +295,58 @@ BaldaGame::Player* BaldaGame::getPlayer(int index)
 BaldaGame::Player* BaldaGame::getCurrentPlayer()
 {
     return &players[playerMove];
+}
+
+int BaldaGame::getCurrentPlayerIndex() const
+{
+    return playerMove;
+}
+
+BaldaGame::GameState BaldaGame::getGameState() const
+{
+    return gameState;
+}
+
+void BaldaGame::toNextPlayer()
+{
+    playerMove = (playerMove + 1) % PLAYER_COUNT;
+}
+
+void BaldaGame::updateGameState()
+{
+    for (int i = 0; i < PLAYER_COUNT; i++) {
+        if (players[i].missedMoves == MAX_PLAYER_MISSED_MOVES) {
+            gameState = GameState(1 - i);
+            break;
+        }
+    }
+    bool hasEmptyCells = 0;
+    for (int x = 0; x < BOARD_SIZE; x++) {
+        for (int y = 0; y < BOARD_SIZE; y++) {
+            if (getLetter(x, y) == BLANK_LETTER) {
+                hasEmptyCells = 1;
+                break;
+            }
+        }
+        if (hasEmptyCells)
+            break;
+    }
+    if (!hasEmptyCells) {
+        int maxScorePlayerIndex = 0, maxScore = players[0].score;
+        for (int i = 1; i < PLAYER_COUNT; i++) {
+            if (players[i].score > maxScore) {
+                maxScore = players[i].score;
+                maxScorePlayerIndex = i;
+            } else if (players[i].score == maxScore) {
+                maxScorePlayerIndex = -1;
+            }
+        }
+        if (maxScorePlayerIndex == -1) {
+            gameState = tie;
+        } else {
+            gameState = GameState(maxScorePlayerIndex);
+        }
+    }
 }
 
 BaldaGame::Player::Player()

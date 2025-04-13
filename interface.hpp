@@ -24,7 +24,7 @@ class UserInterface {
         Button();
         Button(int x, int y, int width, int height);
         Button(int x, int y, int width, int height, wstring text);
-        virtual void draw(HANDLE& handle) const;
+        void draw(HANDLE& handle) const;
         void setSelected(bool state);
         Coord getPos() const;
         Coord getSize() const;
@@ -59,7 +59,6 @@ class UserInterface {
         FieldButton(int x, int y, int fieldX, int fieldY, wchar_t letter, BaldaGame* game);
         void onClick() override;
         void setLetter(wchar_t letter);
-        // virtual void draw(HANDLE& handle) const override;
     };
     class WordButton : public Button {
         BaldaGame* game;
@@ -76,12 +75,12 @@ class UserInterface {
         LetterButton(int x, int y, wchar_t letter, BaldaGame* game);
         void onClick() override;
     };
-    class PlayerStats : Button {
+    class PlayerStats : public Button {
         BaldaGame::Player* player;
         void onClick();
 
     public:
-        PlayerStats(int x, int y, BaldaGame::Player* playerPtr);
+        PlayerStats(int x, int y, wstring text, BaldaGame::Player* playerPtr);
         void draw(HANDLE& handle) const;
     };
     class ButtonGrid {
@@ -101,7 +100,7 @@ class UserInterface {
     int tabIndex;
     Coord buttonGridPos;
     vector<ButtonGrid> buttonGrids;
-    vector<PlayerStats> playerStats;
+    vector<PlayerStats*> playerStats;
     void mouseEvent(MOUSE_EVENT_RECORD);
     void keyboardEvent(KEY_EVENT_RECORD);
     void draw();

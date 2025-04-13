@@ -85,6 +85,7 @@ UserInterface::StartGameButton::StartGameButton(BaldaGame* game)
 
 void UserInterface::StartGameButton::onClick()
 {
+    game->newGame();
 }
 
 UserInterface::MissMoveButton::MissMoveButton(BaldaGame* game)
@@ -97,6 +98,7 @@ UserInterface::MissMoveButton::MissMoveButton(BaldaGame* game)
 
 void UserInterface::MissMoveButton::onClick()
 {
+    game->missMove();
 }
 
 UserInterface::RemoveLetterButton::RemoveLetterButton(BaldaGame* game)
@@ -129,10 +131,6 @@ void UserInterface::FieldButton::setLetter(wchar_t letter)
     text = wstring(1, letter);
 }
 
-// void UserInterface::FieldButton::draw(HANDLE& handle) const
-//{
-// }
-
 UserInterface::WordButton::WordButton(BaldaGame* game)
     : Button(WORD_BUTTON_X, WORD_BUTTON_Y, WORD_BUTTON_WIDTH, WORD_BUTTON_HEIGHT, wstring())
 {
@@ -147,6 +145,19 @@ void UserInterface::WordButton::onClick()
 void UserInterface::WordButton::update()
 {
     text.clear();
+    switch (game->getGameState()) {
+    case game->GameState::player1Won:
+        text = PLAYER1_WON_TEXT;
+        return;
+    case game->GameState::player2Won:
+        text = PLAYER2_WON_TEXT;
+        return;
+    case game->GameState::tie:
+        text = TIE_TEXT;
+        return;
+    default:
+        break;
+    }
     wstring word = game->getWord();
     if (!word.size())
         return;
@@ -344,8 +355,8 @@ UserInterface::UserInterface(BaldaGame* gamePtr, HANDLE hStdIn, HANDLE hStdOut)
     buttonGrids.push_back(wordButtonGrid);
     buttonGrids.push_back(letterButtonGrid);
 
-    PlayerStats player1Stats = PlayerStats(PLAYER1_STATS_X, PLAYER1_STATS_Y, game->getPlayer(0));
-    PlayerStats player2Stats = PlayerStats(PLAYER2_STATS_X, PLAYER2_STATS_Y, game->getPlayer(1));
+    PlayerStats* player1Stats = new PlayerStats(PLAYER1_STATS_X, PLAYER1_STATS_Y, PLAYER1_TEXT, game->getPlayer(0));
+    PlayerStats* player2Stats = new PlayerStats(PLAYER2_STATS_X, PLAYER2_STATS_Y, PLAYER2_TEXT, game->getPlayer(1));
 
     playerStats.push_back(player1Stats);
     playerStats.push_back(player2Stats);
@@ -366,6 +377,11 @@ void UserInterface::update()
                 buttonGrid.getButton(x, y)->setSelected(false);
             }
         }
+    }
+
+    int playerIndex = game->getCurrentPlayerIndex();
+    for (int i = 0; i < playerStats.size(); i++) {
+        playerStats[i]->setSelected(playerIndex == i);
     }
 
     ButtonGrid& fieldButtonGrid = buttonGrids[FIELD_BUTTON_GRID_INDEX];
@@ -420,8 +436,8 @@ void UserInterface::draw()
     for (ButtonGrid& buttonGrid : buttonGrids) {
         buttonGrid.draw(handleOutput);
     }
-    for (PlayerStats& playerNStats : playerStats) {
-        playerNStats.draw(handleOutput);
+    for (PlayerStats* playerNStats : playerStats) {
+        playerNStats->draw(handleOutput);
     }
 }
 
@@ -429,28 +445,39 @@ void UserInterface::PlayerStats::onClick()
 {
 }
 
-UserInterface::PlayerStats::PlayerStats(int x, int y, BaldaGame::Player* playerPtr)
+UserInterface::PlayerStats::PlayerStats(int x, int y, wstring text, BaldaGame::Player* playerPtr)
     : Button(x, y, PLAYER_STATS_WIDTH, PLAYER_STATS_HEIGHT)
     , player(playerPtr)
 {
+    this->text = text;
 }
 
 void UserInterface::PlayerStats::draw(HANDLE& handle) const
 {
     COORD coord {};
     DWORD _;
+    Coord playerCoord = Coord(pos.x + 2, pos.y + 1);
     Coord wordsCoord = Coord(pos.x + 2, pos.y + size.y - 3 - int(player->words.size()));
     Coord scoreCoord = Coord(pos.x + 2, pos.y + size.y - 2);
     wstring scoreText = to_wstring(player->score);
+    wstring missedText = L"";
+    for (int i = 0; i < player->missedMoves; i++) {
+        missedText += L"X ";
+    }
+    Coord missedCoord = Coord(pos.x + size.x - 1 - int(missedText.size()), pos.y + size.y - 2);
     for (int x = pos.x; x < pos.x + size.x; x++) {
         coord.X = x;
         for (int y = pos.y; y < pos.y + size.y; y++) {
             coord.Y = y;
-            if (x >= scoreCoord.x && x < scoreCoord.x + scoreText.size() && y == scoreCoord.y) {
+            if (x >= playerCoord.x && x < playerCoord.x + text.size() && y == playerCoord.y) {
+                WriteConsoleOutputCharacter(handle, &text[size_t(x - playerCoord.x)], 1, coord, &_);
+            } else if (x >= scoreCoord.x && x < scoreCoord.x + scoreText.size() && y == scoreCoord.y) {
                 WriteConsoleOutputCharacter(handle, &scoreText[size_t(x - scoreCoord.x)], 1, coord, &_);
             } else if (y > pos.y + 1 && y >= wordsCoord.y && y < wordsCoord.y + int(player->words.size()) && x >= wordsCoord.x && x < wordsCoord.x + player->words[size_t(y - wordsCoord.y)].size()) {
                 wstring& word = player->words[size_t(y - wordsCoord.y)];
                 WriteConsoleOutputCharacter(handle, &word[size_t(x - scoreCoord.x)], 1, coord, &_);
+            } else if (x >= missedCoord.x && x < missedCoord.x + missedText.size() && y == missedCoord.y) {
+                WriteConsoleOutputCharacter(handle, &missedText[size_t(x - missedCoord.x)], 1, coord, &_);
             } else {
                 wchar_t border = BUTTON_BORDERS[selected + 2 * (1 * (x == pos.x && y == pos.y) + 2 * (x == pos.x + size.x - 1 && y == pos.y) + 3 * (x == pos.x + size.x - 1 && y == pos.y + size.y - 1) + 4 * (x == pos.x && y == pos.y + size.y - 1) + 5 * ((x == pos.x || x == pos.x + size.x - 1) && pos.y < y && y < pos.y + size.y - 1) + 6 * (pos.x < x && x < pos.x + size.x - 1 && (y == pos.y || y == pos.y + size.y - 1)))];
                 WriteConsoleOutputCharacter(handle, &border, 1, coord, &_);

@@ -26,6 +26,13 @@ public:
         Player();
     };
 
+    enum GameState {
+        inGame = -2,
+        tie = -1,
+        player1Won = 0,
+        player2Won = 1
+    };
+
 private:
     Cell field[BOARD_SIZE][BOARD_SIZE];
     vector<Cell> selectedWord;
@@ -33,13 +40,15 @@ private:
     vector<wstring> sentWords;
     vector<Player> players;
     int playerMove;
-
-public:
     set<wstring> words;
+    vector<wstring> startWords;
+    GameState gameState;
 
     bool isNeighbor(Cell c1, Cell c2);
     bool onField(int x, int y);
     void loadWords();
+    void toNextPlayer();
+    void updateGameState();
 
 public:
     vector<Cell> getSelectedWord();
@@ -49,7 +58,7 @@ public:
     Cell getCell(int x, int y) const;
     BaldaGame();
     BaldaGame(wstring word);
-    void print() const;
+    void newGame();
     void selectLetter(wchar_t letter);
     void selectLetter(int x, int y);
     void removeLetter();
@@ -58,4 +67,6 @@ public:
     void missMove();
     Player* getPlayer(int index);
     Player* getCurrentPlayer();
+    int getCurrentPlayerIndex() const;
+    GameState getGameState() const;
 };

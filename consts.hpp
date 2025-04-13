@@ -2,6 +2,7 @@
 
 const int PLAYER_COUNT = 2;
 const int BOARD_SIZE = 5;
+const int MAX_PLAYER_MISSED_MOVES = 3;
 
 const int CONSOLE_WIDTH = 66;
 const int CONSOLE_HEIGHT = 35;
@@ -56,10 +57,14 @@ const int PLAYER_STATS_WIDTH = 17;
 const int PLAYER_STATS_HEIGHT = 15;
 
 const wchar_t BUTTON_BORDERS[] = L"  ┌╔┐╗┘╝└╚│║─═";
-const wchar_t FIELD_BUTTON_ARROWS[] = L"↑→↓←";
 
 const wchar_t START_GAME_TEXT[] = L"Начать игру";
 const wchar_t MISS_MOVE_TEXT[] = L"Пропустить ход";
 const wchar_t REMOVE_LETTER_TEXT[] = L"Удалить букву";
+const wchar_t PLAYER1_TEXT[] = L"Игрок 1";
+const wchar_t PLAYER2_TEXT[] = L"Игрок 2";
+const wchar_t PLAYER1_WON_TEXT[] = L"Игрок 1 победил!";
+const wchar_t PLAYER2_WON_TEXT[] = L"Игрок 2 победил!";
+const wchar_t TIE_TEXT[] = L"Ничья!";
 const wchar_t RUSSIAN_LETTERS[] = L"АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ";
 const wchar_t BLANK_LETTER = L' ';
