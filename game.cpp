@@ -124,17 +124,24 @@ void BaldaGame::loadWords()
     wstring word;
 
     if (file.is_open()) {
+        file.get();
+        file.get();
         wchar_t c1 = file.get(), c2 = file.get();
         while (file) {
-            wchar_t c = (c1 << 8) | c2;
-            if (c != L'\n') {
-                word.push_back(c);
-            } else {
+            wchar_t c = c1 | (c2 << 8);
+            switch (c) {
+            case L'\n':
                 words.insert(word);
                 if (word.size() == BOARD_SIZE) {
                     startWords.push_back(word);
                 }
                 word.clear();
+                break;
+            case L'\r':
+                break;
+            default:
+                word.push_back(c);
+                break;
             }
             c1 = file.get();
             c2 = file.get();
